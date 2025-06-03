@@ -1,238 +1,213 @@
 /**
- * Retab VS Code Extension
+ * Go Extras VS Code Extension
  *
- * This extension provides formatting capabilities for various file types using different formatting engines.
+ * This extension provides various enhancements for Go development in VS Code,
+ * including CodeLens functionality, reference counting, and navigation helpers.
  *
- * Engine Types:
- * - wasm (default): Uses WebAssembly for fastest performance, runs in the background
- * - go-tool: Uses 'go tool github.com/walteh/retab/v2/cmd/retab' (requires Go 1.24+)
- * - go-run: Uses 'go run github.com/walteh/retab/v2/cmd/retab@version'
- * - path: Uses 'retab' from system PATH
- * - local: Uses specified executable path from 'retab.executable'
- *
- * Configuration:
- * - retab.engine: The formatting engine to use (default: "wasm")
- * - retab.executable: Path to retab executable when using "local" engine
- * - retab.disable_wasm_fallback: Disable fallback to WASM when other engines fail
- * - retab.format_tf_as_hcl: Format Terraform files using HCL formatter
- *
+ * Features:
+ * - Reference count CodeLens for Go symbols
+ * - "Go to definition" CodeLens
+ * - Reuses existing Go extension's gopls instance (no embedded server)
+ * - Lightweight footprint with minimal dependencies
+ * - Extensible architecture for additional Go development tools
  */
 
 import * as vscode from "vscode";
-import { WasmFormatter } from "./wasm";
-import { GoRunFormatter, GoToolFormatter, LocalFormatter, PathFormatter } from "./cli";
 
-// Create output channel
-const outputChannel = vscode.window.createOutputChannel("retab");
+// Create output channel for debugging
+const outputChannel = vscode.window.createOutputChannel("Go Extras");
 
-// Engine type enum
-export enum RetabEngine {
-	WASM = "wasm",
-	GO_TOOL = "go-tool",
-	GO_RUN = "go-run",
-	PATH = "path",
-	LOCAL = "local",
-}
+/**
+ * CodeLens provider for Go files
+ */
+class GoExtrasCodeLensProvider implements vscode.CodeLensProvider {
+	private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
+	public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event;
 
-// Language IDs enum
-export enum VSCodeLanguageID {
-	PROTO = "proto",
-	PROTO3 = "proto3",
-	HCL = "hcl",
-	HCL2 = "hcl2",
-	TERRAFORM = "terraform",
-	TF = "tf",
-	TFVARS = "tfvars",
-	DART = "dart",
-	PROTOBUF = "protobuf",
-	SWIFT = "swift",
-	YAML = "yaml",
-	YML = "yml",
-	SH = "sh",
-	BASH = "bash",
-	ZSH = "zsh",
-	KSH = "ksh",
-	SH_OR_BASH = "sh_or_bash",
-	SHELL = "shell",
-	SHELL_SCRIPT = "shellscript",
-	DOCKERFILE = "dockerfile",
-}
+	constructor() {}
 
-// Format types enum
-export enum RetabFormat {
-	PROTO = "proto",
-	HCL = "hcl",
-	DART = "dart",
-	TF = "tf",
-	SWIFT = "swift",
-	AUTO = "auto",
-	YAML = "yaml",
-	SHELL = "shell",
-	DOCKERFILE = "dockerfile",
-}
+	/**
+	 * Provide CodeLens for the document
+	 */
+	public async provideCodeLenses(
+		document: vscode.TextDocument,
+		token: vscode.CancellationToken
+	): Promise<vscode.CodeLens[]> {
+		const config = vscode.workspace.getConfiguration("go-extras");
 
-// Supported languages array
-export const SUPPORTED_LANGUAGES: VSCodeLanguageID[] = [
-	VSCodeLanguageID.PROTO,
-	VSCodeLanguageID.PROTO3,
-	VSCodeLanguageID.HCL,
-	VSCodeLanguageID.HCL2,
-	VSCodeLanguageID.TERRAFORM,
-	VSCodeLanguageID.TF,
-	VSCodeLanguageID.TFVARS,
-	VSCodeLanguageID.DART,
-	VSCodeLanguageID.PROTOBUF,
-	VSCodeLanguageID.SWIFT,
-	VSCodeLanguageID.YAML,
-	VSCodeLanguageID.YML,
-	VSCodeLanguageID.SH,
-	VSCodeLanguageID.BASH,
-	VSCodeLanguageID.ZSH,
-	VSCodeLanguageID.KSH,
-	VSCodeLanguageID.SH_OR_BASH,
-	VSCodeLanguageID.SHELL,
-	VSCodeLanguageID.SHELL_SCRIPT,
-	VSCodeLanguageID.DOCKERFILE,
-];
+		if (!config.get("codeLens.enabled", true)) {
+			return [];
+		}
 
-// Interface for engine implementations
-export interface RetabFormatter {
-	initialize(extensionContext: vscode.ExtensionContext): Promise<void>;
-	format(content: string, filePath: string, formatType: RetabFormat): Promise<string>;
-	getVersion(context: vscode.ExtensionContext): Promise<string>;
-}
+		const showReferences = config.get("codeLens.showReferences", true);
+		const showDefinitions = config.get("codeLens.showDefinitions", true);
 
-// Map VS Code language IDs to retab format types
-function getFormatType(languageId: string, formatTfAsHcl: boolean): RetabFormat {
-	// First map the language to its base format type
-	const formatTypeMap: { [key in VSCodeLanguageID]: RetabFormat } = {
-		[VSCodeLanguageID.PROTO]: RetabFormat.PROTO,
-		[VSCodeLanguageID.PROTO3]: RetabFormat.PROTO,
-		[VSCodeLanguageID.HCL]: RetabFormat.HCL,
-		[VSCodeLanguageID.HCL2]: RetabFormat.HCL,
-		[VSCodeLanguageID.TERRAFORM]: RetabFormat.TF,
-		[VSCodeLanguageID.TF]: RetabFormat.TF,
-		[VSCodeLanguageID.TFVARS]: RetabFormat.TF,
-		[VSCodeLanguageID.DART]: RetabFormat.DART,
-		[VSCodeLanguageID.PROTOBUF]: RetabFormat.PROTO,
-		[VSCodeLanguageID.SWIFT]: RetabFormat.SWIFT,
-		[VSCodeLanguageID.YAML]: RetabFormat.YAML,
-		[VSCodeLanguageID.YML]: RetabFormat.YAML,
-		[VSCodeLanguageID.SH]: RetabFormat.SHELL,
-		[VSCodeLanguageID.BASH]: RetabFormat.SHELL,
-		[VSCodeLanguageID.ZSH]: RetabFormat.SHELL,
-		[VSCodeLanguageID.KSH]: RetabFormat.SHELL,
-		[VSCodeLanguageID.SH_OR_BASH]: RetabFormat.SHELL,
-		[VSCodeLanguageID.SHELL]: RetabFormat.SHELL,
-		[VSCodeLanguageID.SHELL_SCRIPT]: RetabFormat.SHELL,
-		[VSCodeLanguageID.DOCKERFILE]: RetabFormat.DOCKERFILE,
-	};
+		if (!showReferences && !showDefinitions) {
+			return [];
+		}
 
-	// Get the base format type
-	const baseFormat = formatTypeMap[languageId as VSCodeLanguageID] || RetabFormat.AUTO;
+		try {
+			const symbols = await this.getDocumentSymbols(document);
+			const codeLenses: vscode.CodeLens[] = [];
 
-	// Handle special case for Terraform files
-	if (formatTfAsHcl && baseFormat === RetabFormat.TF) {
-		return RetabFormat.HCL;
-	}
+			for (const symbol of symbols) {
+				if (this.isSupportedSymbol(symbol)) {
+					const range = symbol.selectionRange;
 
-	outputChannel.appendLine(`[main] mapped language ${languageId} to format type ${baseFormat}`);
-	return baseFormat;
-}
+					if (showReferences) {
+						const referencesLens = new vscode.CodeLens(range);
+						referencesLens.command = {
+							title: "$(loading~spin) refs",
+							command: "",
+						};
+						codeLenses.push(referencesLens);
+					}
 
-// Current engine instance
-
-const wasmFormatter = new WasmFormatter(outputChannel);
-
-function getFormatter(engine: RetabEngine): RetabFormatter {
-	switch (engine) {
-		case RetabEngine.WASM:
-			return wasmFormatter;
-		case RetabEngine.GO_TOOL:
-			return new GoToolFormatter();
-		case RetabEngine.GO_RUN:
-			return new GoRunFormatter();
-		case RetabEngine.PATH:
-			return new PathFormatter();
-		case RetabEngine.LOCAL:
-			return new LocalFormatter();
-		default:
-			throw new Error(`unknown engine type: ${engine}`);
-	}
-}
-
-export function activate(context: vscode.ExtensionContext) {
-	outputChannel.appendLine("[main] retab formatter activated");
-
-	// Initialize WASM engine by default
-	wasmFormatter.initialize(context).catch((err) => {
-		outputChannel.appendLine(`[main] failed to initialize WASM engine: ${err}`);
-	});
-
-	let currentEngine: RetabEngine = RetabEngine.WASM;
-
-	let currentFormatter: RetabFormatter = wasmFormatter;
-
-	// Register formatter for all supported languages
-	let disposable = vscode.languages.registerDocumentFormattingEditProvider(SUPPORTED_LANGUAGES, {
-		async provideDocumentFormattingEdits(document: vscode.TextDocument): Promise<vscode.TextEdit[]> {
-			try {
-				const config = vscode.workspace.getConfiguration("retab");
-				const engine = config.get<RetabEngine>("engine") || RetabEngine.WASM;
-				const disableWasmFallback = config.get<boolean>("disable_wasm_fallback") || false;
-				const formatTfAsHcl = config.get<boolean>("format_tf_as_hcl") || false;
-
-				// Create formatter instance based on engine type
-				if (engine !== currentEngine) {
-					currentEngine = engine;
-					currentFormatter = getFormatter(engine);
-					if (currentFormatter !== wasmFormatter) {
-						await currentFormatter.initialize(context);
+					if (showDefinitions) {
+						const definitionLens = new vscode.CodeLens(range);
+						definitionLens.command = {
+							title: "$(arrow-right) definition",
+							command: "editor.action.revealDefinition",
+						};
+						codeLenses.push(definitionLens);
 					}
 				}
-
-				const formatType = getFormatType(document.languageId, formatTfAsHcl);
-
-				try {
-					const formatted = await currentFormatter.format(
-						document.getText(),
-						document.fileName,
-						RetabFormat.AUTO
-					);
-
-					return [vscode.TextEdit.replace(new vscode.Range(0, 0, document.lineCount, 0), formatted)];
-				} catch (err) {
-					outputChannel.appendLine(`[${engine}] error formatting ${document.fileName}: ${err}`);
-					// Try WASM fallback if enabled
-					if (!disableWasmFallback && engine !== RetabEngine.WASM) {
-						outputChannel.appendLine(`[main] falling back to wasm: ${err}`);
-						try {
-							const formatted = await wasmFormatter.format(
-								document.getText(),
-								document.fileName,
-								formatType
-							);
-							return [vscode.TextEdit.replace(new vscode.Range(0, 0, document.lineCount, 0), formatted)];
-						} catch (err) {
-							outputChannel.appendLine(
-								`[main] failed to format ${document.fileName} with wasm fallback: ${err}`
-							);
-							return [];
-						}
-					}
-					outputChannel.appendLine(`[main] wasm fallback disabled, returning empty edits`);
-					return [];
-				}
-			} catch (err) {
-				outputChannel.appendLine(`[main] error formatting ${document.fileName}: ${err}`);
-				return [];
 			}
-		},
-	});
 
-	context.subscriptions.push(disposable);
+			return codeLenses;
+		} catch (error) {
+			outputChannel.appendLine(`Error providing CodeLenses: ${error}`);
+			return [];
+		}
+	}
+
+	/**
+	 * Resolve CodeLens (fetch reference counts)
+	 */
+	public async resolveCodeLens(codeLens: vscode.CodeLens, token: vscode.CancellationToken): Promise<vscode.CodeLens> {
+		if (!codeLens.command || codeLens.command.title.includes("definition")) {
+			return codeLens;
+		}
+
+		try {
+			const document = await vscode.workspace.openTextDocument(vscode.window.activeTextEditor?.document.uri!);
+			const position = codeLens.range.start;
+
+			const references = await vscode.commands.executeCommand<vscode.Location[]>(
+				"vscode.executeReferenceProvider",
+				document.uri,
+				position
+			);
+
+			const refCount = references ? references.length : 0;
+			codeLens.command = {
+				title: `${refCount} refs`,
+				command: "go-extras.showReferences",
+				arguments: [document.uri, position, references],
+			};
+
+			return codeLens;
+		} catch (error) {
+			outputChannel.appendLine(`Error resolving CodeLens: ${error}`);
+			codeLens.command = {
+				title: "? refs",
+				command: "",
+			};
+			return codeLens;
+		}
+	}
+
+	/**
+	 * Get document symbols using VS Code API
+	 */
+	private async getDocumentSymbols(document: vscode.TextDocument): Promise<vscode.DocumentSymbol[]> {
+		try {
+			const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+				"vscode.executeDocumentSymbolProvider",
+				document.uri
+			);
+			return symbols || [];
+		} catch (error) {
+			outputChannel.appendLine(`Error getting document symbols: ${error}`);
+			return [];
+		}
+	}
+
+	/**
+	 * Check if symbol is supported for CodeLens
+	 */
+	private isSupportedSymbol(symbol: vscode.DocumentSymbol): boolean {
+		const supportedKinds = [
+			vscode.SymbolKind.Function,
+			vscode.SymbolKind.Method,
+			vscode.SymbolKind.Interface,
+			vscode.SymbolKind.Field, // For exported struct fields
+		];
+
+		return supportedKinds.includes(symbol.kind);
+	}
+
+	/**
+	 * Refresh CodeLenses
+	 */
+	public refresh(): void {
+		this._onDidChangeCodeLenses.fire();
+	}
 }
 
+/**
+ * Show references command handler
+ */
+async function showReferences(uri: vscode.Uri, position: vscode.Position, references: vscode.Location[]) {
+	if (!references || references.length === 0) {
+		vscode.window.showInformationMessage("No references found");
+		return;
+	}
+
+	await vscode.commands.executeCommand("editor.action.showReferences", uri, position, references);
+}
+
+/**
+ * Extension activation
+ */
+export function activate(context: vscode.ExtensionContext) {
+	outputChannel.appendLine("Go Extras extension activated");
+
+	// Create CodeLens provider
+	const codeLensProvider = new GoExtrasCodeLensProvider();
+
+	// Register CodeLens provider for Go files
+	const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(
+		{ scheme: "file", language: "go" },
+		codeLensProvider
+	);
+
+	// Register show references command
+	const showReferencesCommand = vscode.commands.registerCommand("go-extras.showReferences", showReferences);
+
+	// Register refresh command (for debugging/testing)
+	const refreshCommand = vscode.commands.registerCommand("go-extras.refresh", () => {
+		codeLensProvider.refresh();
+		outputChannel.appendLine("Go Extras CodeLens refreshed");
+	});
+
+	// Listen for configuration changes
+	const configListener = vscode.workspace.onDidChangeConfiguration((e) => {
+		if (e.affectsConfiguration("go-extras")) {
+			codeLensProvider.refresh();
+			outputChannel.appendLine("Go Extras configuration changed, refreshing");
+		}
+	});
+
+	// Add subscriptions
+	context.subscriptions.push(codeLensProviderDisposable, showReferencesCommand, refreshCommand, configListener);
+
+	outputChannel.appendLine("Go Extras extension ready");
+}
+
+/**
+ * Extension deactivation
+ */
 export function deactivate() {
-	outputChannel.dispose();
+	outputChannel.appendLine("Go Extras extension deactivated");
 }

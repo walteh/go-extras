@@ -8,8 +8,8 @@ vars:
         sh: cat go.mod | grep -oE '^module[^\S]+' | cut -d' ' -f2
     GO_COMMAND: go
     TINYGO_COMMAND: tinygo
-    WASM_OUT_DIRS:
-      - editors/vscode/out
+    WASM_OUT_DIRS: [editors/vscode/out]
+    PROJECT_NAME: go-extras
 
 env:
     COMPOSE_BAKE: true
@@ -59,7 +59,7 @@ tasks:
           - cmd: |-
                 cp {{.GO_WASM_EXEC}} {{.TMP_DIR}}/
           - cmd: |-
-                CGO_ENABLED=0 GOOS=js GOARCH=wasm "{{.GO_COMMAND}}" build -ldflags="-s -w"  -trimpath -o {{.TMP_DIR}}/retab.wasm ./cmd/retab
+                CGO_ENABLED=0 GOOS=js GOARCH=wasm "{{.GO_COMMAND}}" build -ldflags="-s -w"  -trimpath -o {{.TMP_DIR}}/{{.PROJECT_NAME}}.wasm ./cmd/{{.PROJECT_NAME}}
           - cmd: |-
                 bun install
           - for: {var: WASM_OUT_DIRS}
@@ -83,7 +83,7 @@ tasks:
           - cmd: |-
                 bun run package
           - cmd: |-
-                mv ./retab-*.vsix ~/Downloads
+                mv ./{{.PROJECT_NAME}}-*.vsix ~/Downloads
           - cmd: |-
                 open https://marketplace.visualstudio.com/manage/publishers/walteh
 

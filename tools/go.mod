@@ -1,16 +1,19 @@
-module github.com/walteh/retab/v2/tools
+module github.com/walteh/go-extras/tools
 
 go 1.24.3
 
-tool github.com/go-task/task/v3/cmd/task
+tool (
+	// dev tools
+	github.com/go-task/task/v3/cmd/task
+	github.com/walteh/retab/v2
 
-tool github.com/vektra/mockery/v2
+	// generation
+	github.com/vektra/mockery/v2
+	github.com/kazhuravlev/options-gen/cmd/options-gen
 
-tool github.com/oligot/go-mod-upgrade
-
-tool github.com/kazhuravlev/options-gen/cmd/options-gen
-
-tool github.com/walteh/goimports-reviser/v3
+	// module management
+	github.com/oligot/go-mod-upgrade
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
