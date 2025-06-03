@@ -21,6 +21,6 @@
 	],
 	"build": {
 		"context": "./background",
-		"dockerfile": "./background/Dockerfile"
+		"dockerfile": "Dockerfile"
 	}
 }
