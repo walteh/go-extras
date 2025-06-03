@@ -31,6 +31,9 @@ WORKDIR /home/bgagent
 RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/home/bgagent/.bun/bin:$PATH"
 
+COPY ./background/install.sh /bin/bgagent-install.sh
+COPY ./background/start.sh /bin/bgagent-start.sh
+
 # Set working directory
 WORKDIR /workspace
 
