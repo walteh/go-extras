@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
 	git \
 	golang-go \
 	sudo \
+	unzip \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Install Bun (not available in Ubuntu repos yet)
