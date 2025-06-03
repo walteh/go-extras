@@ -20,7 +20,7 @@
 		}
 	],
 	"build": {
-		"context": "./background",
+		"context": ".",
 		"dockerfile": "Dockerfile"
 	}
 }
