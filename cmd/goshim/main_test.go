@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGowConfig_findSafeGo(t *testing.T) {
+func TestGoShimConfig_findSafeGo(t *testing.T) {
 	tests := []struct {
 		name    string
 		setup   func(*GoShimConfig)
@@ -38,7 +38,7 @@ func TestGowConfig_findSafeGo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := NewGowConfig()
+			cfg := NewGoShimConfig()
 			tt.setup(cfg)
 
 			goPath, err := cfg.findSafeGo()
@@ -66,8 +66,8 @@ func TestGowConfig_findSafeGo(t *testing.T) {
 	}
 }
 
-func TestGowConfig_hasGotestsum(t *testing.T) {
-	cfg := NewGowConfig()
+func TestGoShimConfig_hasGotestsum(t *testing.T) {
+	cfg := NewGoShimConfig()
 
 	// This test depends on environment, but we can at least test the logic
 	hasIt := cfg.hasGotestsum()
@@ -82,8 +82,8 @@ func TestGowConfig_hasGotestsum(t *testing.T) {
 	}
 }
 
-func TestGowConfig_execSafeGo(t *testing.T) {
-	cfg := NewGowConfig()
+func TestGoShimConfig_execSafeGo(t *testing.T) {
+	cfg := NewGoShimConfig()
 	ctx := context.Background()
 
 	// Test basic go command
@@ -93,7 +93,7 @@ func TestGowConfig_execSafeGo(t *testing.T) {
 	}
 }
 
-func TestGowConfig_handleTest(t *testing.T) {
+func TestGoShimConfig_handleTest(t *testing.T) {
 	// Create a temporary test package
 	tmpDir := t.TempDir()
 
@@ -125,7 +125,7 @@ func TestExample(t *testing.T) {
 	defer os.Chdir(oldDir)
 	os.Chdir(tmpDir)
 
-	cfg := NewGowConfig()
+	cfg := NewGoShimConfig()
 	cfg.WorkspaceRoot = tmpDir
 
 	tests := []struct {
@@ -160,7 +160,7 @@ func TestExample(t *testing.T) {
 	}
 }
 
-func TestGowConfig_handleMod(t *testing.T) {
+func TestGoShimConfig_handleMod(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create go.mod
@@ -175,7 +175,7 @@ func TestGowConfig_handleMod(t *testing.T) {
 	defer os.Chdir(oldDir)
 	os.Chdir(tmpDir)
 
-	cfg := NewGowConfig()
+	cfg := NewGoShimConfig()
 	cfg.WorkspaceRoot = tmpDir
 
 	tests := []struct {
@@ -268,23 +268,23 @@ use (
 	}
 }
 
-func TestNewGowConfig(t *testing.T) {
-	cfg := NewGowConfig()
+func TestNewGoShimConfig(t *testing.T) {
+	cfg := NewGoShimConfig()
 
 	if cfg.Verbose {
-		t.Error("NewGowConfig() should not be verbose by default")
+		t.Error("NewGoShimConfig() should not be verbose by default")
 	}
 
 	if cfg.MaxLines != 1000 {
-		t.Errorf("NewGowConfig() MaxLines = %d, want 1000", cfg.MaxLines)
+		t.Errorf("NewGoShimConfig() MaxLines = %d, want 1000", cfg.MaxLines)
 	}
 
 	if len(cfg.ErrorsToSuppress) == 0 {
-		t.Error("NewGowConfig() should have some errors to suppress")
+		t.Error("NewGoShimConfig() should have some errors to suppress")
 	}
 
 	if cfg.WorkspaceRoot == "" {
-		t.Error("NewGowConfig() should set WorkspaceRoot")
+		t.Error("NewGoShimConfig() should set WorkspaceRoot")
 	}
 }
 
@@ -306,16 +306,16 @@ func TestFileExists(t *testing.T) {
 }
 
 // Integration test to verify end-to-end behavior
-func TestGowIntegration(t *testing.T) {
+func TestGoShimIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	// Build gow binary
-	gowBinary := filepath.Join(t.TempDir(), "gow")
-	cmd := exec.Command("go", "build", "-o", gowBinary, ".")
+	// Build goshim binary
+	goshimBinary := filepath.Join(t.TempDir(), "goshim")
+	cmd := exec.Command("go", "build", "-o", goshimBinary, ".")
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("failed to build gow: %v", err)
+		t.Fatalf("failed to build goshim: %v", err)
 	}
 
 	tests := []struct {
@@ -337,8 +337,8 @@ func TestGowIntegration(t *testing.T) {
 			timeout: 5 * time.Second,
 		},
 		{
-			name:    "gow help command",
-			args:    []string{"gow-help"},
+			name:    "goshim help command",
+			args:    []string{"goshim-help"},
 			wantErr: false,
 			timeout: 5 * time.Second,
 		},
@@ -355,11 +355,11 @@ func TestGowIntegration(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), tt.timeout)
 			defer cancel()
 
-			cmd := exec.CommandContext(ctx, gowBinary, tt.args...)
+			cmd := exec.CommandContext(ctx, goshimBinary, tt.args...)
 			output, err := cmd.CombinedOutput()
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("gow %v error = %v, wantErr %v\nOutput: %s", tt.args, err, tt.wantErr, output)
+				t.Errorf("goshim %v error = %v, wantErr %v\nOutput: %s", tt.args, err, tt.wantErr, output)
 			}
 
 			// Basic sanity checks
@@ -369,9 +369,9 @@ func TestGowIntegration(t *testing.T) {
 					if !strings.Contains(string(output), "go version") {
 						t.Errorf("version command should contain 'go version', got: %s", output)
 					}
-				case "gow-help":
-					if !strings.Contains(string(output), "gow - High-performance") {
-						t.Errorf("gow-help should contain gow description, got: %s", output)
+				case "goshim-help":
+					if !strings.Contains(string(output), "goshim - High-performance") {
+						t.Errorf("goshim-help should contain goshim description, got: %s", output)
 					}
 				}
 			}
@@ -380,8 +380,8 @@ func TestGowIntegration(t *testing.T) {
 }
 
 // Benchmark tests
-func BenchmarkGowConfig_findSafeGo(b *testing.B) {
-	cfg := NewGowConfig()
+func BenchmarkGoShimConfig_findSafeGo(b *testing.B) {
+	cfg := NewGoShimConfig()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -410,9 +410,9 @@ use (
 	}
 }
 
-func TestGowConfig_createStdioLogFile(t *testing.T) {
+func TestGoShimConfig_createStdioLogFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	cfg := NewGowConfig()
+	cfg := NewGoShimConfig()
 	cfg.WorkspaceRoot = tmpDir
 
 	// Test creating log file
@@ -422,7 +422,7 @@ func TestGowConfig_createStdioLogFile(t *testing.T) {
 	}
 
 	// Verify the log directory was created
-	logDir := filepath.Join(tmpDir, ".log", "gow")
+	logDir := filepath.Join(tmpDir, ".log", "goshim")
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		t.Error("log directory was not created")
 	}
@@ -469,7 +469,7 @@ func TestGowConfig_createStdioLogFile(t *testing.T) {
 	}
 
 	contentStr := string(content)
-	if !strings.Contains(contentStr, "=== GOW STDIO LOG ===") {
+	if !strings.Contains(contentStr, "=== GOSHIM STDIO LOG ===") {
 		t.Error("log file should contain header")
 	}
 	if !strings.Contains(contentStr, "Command: go version") {
@@ -480,9 +480,9 @@ func TestGowConfig_createStdioLogFile(t *testing.T) {
 	}
 }
 
-func TestGowConfig_PipeStdioToFile(t *testing.T) {
+func TestGoShimConfig_PipeStdioToFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	cfg := NewGowConfig()
+	cfg := NewGoShimConfig()
 	cfg.WorkspaceRoot = tmpDir
 	cfg.PipeStdioToFile = true
 
@@ -501,7 +501,7 @@ func TestGowConfig_PipeStdioToFile(t *testing.T) {
 	}
 
 	// Verify log file was created
-	logDir := filepath.Join(tmpDir, ".log", "gow")
+	logDir := filepath.Join(tmpDir, ".log", "goshim")
 	entries, err := os.ReadDir(logDir)
 	if err != nil {
 		t.Fatalf("failed to read log directory: %v", err)
@@ -532,7 +532,7 @@ func TestGowConfig_PipeStdioToFile(t *testing.T) {
 	t.Error("no stdio-pipe.log file found")
 }
 
-func TestGowConfig_handleTestRunPatternFix(t *testing.T) {
+func TestGoShimConfig_handleTestRunPatternFix(t *testing.T) {
 	tests := []struct {
 		name         string
 		inputPattern string

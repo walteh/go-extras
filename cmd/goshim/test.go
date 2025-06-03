@@ -65,7 +65,7 @@ func (cfg *GoShimConfig) handleTest(args []string) error {
 
 	isCalledByDap := isNestedBy(CommandDap)
 
-	// Parse only gow-specific flags, pass everything else through
+	// Parse only goshim-specific flags, pass everything else through
 	var goArgs []string
 	goArgs = append(goArgs, "test")
 
@@ -164,14 +164,12 @@ func (cfg *GoShimConfig) handleTest(args []string) error {
 	}
 
 	if isCalledByDap {
-		// codesignAdditionalArgs = append(codesignAdditionalArgs, "-dap-listen="+os.Getenv("GOW_DAP_WRAP_ADDRESS"))
+		if cfg.Verbose {
+			fmt.Printf("🔧 Debug mode: compiling test binary with go test -c\n")
+		}
 	}
 
-	// if len(codesignAdditionalArgs) > 0 {
-	// 	return fmt.Errorf("codesign additional args: %v", codesignAdditionalArgs)
-	// }
-
-	// For compile-only mode (debugging), skip gow enhancements and pass through directly
+	// For compile-only mode (debugging), skip goshim enhancements and pass through directly
 	if isCompileOnly {
 		if cfg.Verbose {
 			fmt.Printf("🔧 Debug mode: compiling test binary with go test -c\n")
@@ -234,80 +232,15 @@ func (cfg *GoShimConfig) handleTest(args []string) error {
 				}
 			}
 
-			// client := rpc2.NewClient(os.Getenv("GOW_DAP_WRAP_ADDRESS"))
-
-			// client.FollowExec(true, "")
-
-			// 	os.Mkdir("/tmp/test123/", 0755)
-
-			// 	// now, we make a wrapper script that will run the binary
-			// 	// create a wrapper script that will
-			// 	tmpDir, err := os.MkdirTemp("/tmp/test123/", "gow-codesign-dap-test-wrapper-*")
-			// 	if err != nil {
-			// 		return errors.Errorf("creating temp directory: %w", err)
-			// 	}
-
-			// 	// move the binary to the tmpdir
-			// 	err = os.Rename(outputFile, filepath.Join(tmpDir, "binary"))
-			// 	if err != nil {
-			// 		return errors.Errorf("moving binary to temp directory: %w", err)
-			// 	}
-
-			// 	script := fmt.Sprintf(`#!/bin/sh
-			// # if tmpdir/start still exists, we just run the binary
-			// if [ -f %[1]s/start ]; then
-			// 	rm %[1]s/start
-			// 	exec %[1]s/binary $@
-			// else
-			// 	go tool dlv exec --listen=%[2]s %[1]s/binary $@
-			// fi
-			// `, tmpDir, os.Getenv("GOW_DAP_WRAP_ADDRESS"))
-
-			// 	err = os.WriteFile(outputFile, []byte(script), 0755)
-			// 	if err != nil {
-			// 		return errors.Errorf("creating wrapper script: %w", err)
-			// 	}
-
-			// 	// // symlink the binary to the tmpdir/run
-			// 	// err = os.Symlink(filepath.Join(tmpDir, "run"), outputFile)
-			// 	// if err != nil {
-			// 	// 	return errors.Errorf("symlinking binary to temp directory: %w", err)
-			// 	// }
-
-			// 	err = os.WriteFile(filepath.Join(tmpDir, "start"), []byte(fmt.Sprintf("%d", os.Getpid())), 0644)
-			// 	if err != nil {
-			// 		return errors.Errorf("creating start file: %w", err)
-			// 	}
-
-			// 	// make sure outputFile is executable
-			// 	err = os.Chmod(outputFile, 0755)
-			// 	if err != nil {
-			// 		return errors.Errorf("making binary executable: %w", err)
-			// 	}
-
-			// 	// double check that the binary is executable
-			// 	stat, err := os.Stat(outputFile)
-			// 	if err != nil {
-			// 		return errors.Errorf("checking binary executable: %w", err)
-			// 	}
-			// 	if stat.Mode()&0111 == 0 {
-			// 		return errors.Errorf("binary is not executable")
-			// 	}
-
-			// return errors.Errorf("outputFile: %s, tmpDir: %s", outputFile, tmpDir)
-
 			return nil
-			// binary := filepath.Join(tmpDir, "run")
 		}
-
-		// return fmt.Errorf("calling go test -c with args: %v", goArgs)
 
 		return cfg.execSafeGo(ctx, goArgs...)
 	}
 
-	// Add gow-specific functionality for regular test runs
+	// Add goshim-specific functionality for regular test runs
 	if functionCoverage {
-		coverDir, err := os.MkdirTemp("", "gow-coverage-*")
+		coverDir, err := os.MkdirTemp("", "goshim-coverage-*")
 		if err != nil {
 			return fmt.Errorf("failed to create temp coverage dir: %w", err)
 		}

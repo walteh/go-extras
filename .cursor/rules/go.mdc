@@ -14,7 +14,7 @@ code can be written before tests, but [go_test.mdc](mdc:root/.cursor/rules/go_te
 
 # imports:
 always assume that broken imports are because the reference need to be adjusted, not because the thing being referenced doesn't exist
-never directly modify go.mod or go.sum files, always use ./gow mod tidy to update them
+never directly modify go.mod or go.sum files, always use ./goshim mod tidy to update them
 when imports are broken, check if the package moved within the project structure first
 
 # logging:

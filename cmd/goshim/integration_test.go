@@ -42,11 +42,11 @@ func TestExample(t *testing.T) {
 		t.Fatalf("failed to create go.mod: %v", err)
 	}
 
-	// Build gow binary for testing
-	gowBinary := filepath.Join(t.TempDir(), "gow")
-	cmd := exec.Command("go", "build", "-o", gowBinary, ".")
+	// Build goshim binary for testing
+	goshimBinary := filepath.Join(t.TempDir(), "goshim")
+	cmd := exec.Command("go", "build", "-o", goshimBinary, ".")
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("failed to build gow: %v", err)
+		t.Fatalf("failed to build goshim: %v", err)
 	}
 
 	tests := []struct {
@@ -112,7 +112,7 @@ func TestExample(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), tt.timeout)
 			defer cancel()
 
-			cmd := exec.CommandContext(ctx, gowBinary, tt.args...)
+			cmd := exec.CommandContext(ctx, goshimBinary, tt.args...)
 			if tt.workingDir != "" {
 				cmd.Dir = tt.workingDir
 			}
@@ -120,7 +120,7 @@ func TestExample(t *testing.T) {
 			output, err := cmd.CombinedOutput()
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("gow %v error = %v, wantErr %v\nOutput: %s", tt.args, err, tt.wantErr, output)
+				t.Errorf("goshim %v error = %v, wantErr %v\nOutput: %s", tt.args, err, tt.wantErr, output)
 				return
 			}
 
@@ -189,11 +189,11 @@ func TestDebugMe(t *testing.T) {
 		t.Fatalf("failed to create go.mod: %v", err)
 	}
 
-	// Build gow binary
-	gowBinary := filepath.Join(t.TempDir(), "gow")
-	cmd := exec.Command("go", "build", "-o", gowBinary, ".")
+	// Build goshim binary
+	goshimBinary := filepath.Join(t.TempDir(), "goshim")
+	cmd := exec.Command("go", "build", "-o", goshimBinary, ".")
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("failed to build gow: %v", err)
+		t.Fatalf("failed to build goshim: %v", err)
 	}
 
 	// Test debug binary creation
@@ -204,7 +204,7 @@ func TestDebugMe(t *testing.T) {
 	defer cancel()
 
 	// Simulate VS Code debug binary creation
-	cmd = exec.CommandContext(ctx, gowBinary,
+	cmd = exec.CommandContext(ctx, goshimBinary,
 		"test", "-c", "-o", debugBinary,
 		"-gcflags", "all=-N -l",
 		"-ide",

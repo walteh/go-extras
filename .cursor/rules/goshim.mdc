@@ -3,3 +3,28 @@ description:
 globs: cmd/goshim/*
 alwaysApply: false
 ---
+# GoShim Rules
+
+Refer to [cmd/goshim/README.md](file:cmd/goshim/README.md) for complete documentation.
+
+## Usage in Development
+
+- Always use `./goshim` instead of `go` for workspace operations
+- Use `./goshim mod tidy` for workspace-aware dependency management  
+- Enable `-pipe-stdio` flag when debugging Go command behavior
+- Use `-verbose` flag when troubleshooting wrapper issues
+
+## Code Patterns
+
+- Process replacement with `syscall.Exec` for transparent operation
+- Safe go binary resolution to prevent recursion loops
+- Workspace root detection via `go.work` and `go.mod` traversal
+- stdio wrapping with `io.MultiWriter` for logging without interference
+- Context-based operations for cancellation and timeout support
+
+## Integration Points
+
+- Drop-in replacement for `go` command in scripts and tools
+- Designed for symlink scenarios (common in development environments)
+- Compatible with VS Code Go extension and task runners
+- Workspace-aware operations that respect `go.work` boundaries

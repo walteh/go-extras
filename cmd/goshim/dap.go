@@ -42,11 +42,10 @@ func (cfg *GoShimConfig) handleDap(args []string) error {
 	defer cleanup()
 
 	os.Setenv("PATH", updatedPath)
-	os.Setenv("GOW_DAP_WRAP_ADDRESS", listenAddress)
 	os.Setenv("DAP_LISTEN_ADDRESS", listenAddress)
 
 	dlvCmd := exec.Command("dlv", append([]string{"dap"}, argz...)...)
-	dlvCmd.Env = append(updatedEnv, "GOW_DAP_WRAP_ADDRESS="+listenAddress, "DAP_LISTEN_ADDRESS="+listenAddress)
+	dlvCmd.Env = append(updatedEnv, "DAP_LISTEN_ADDRESS="+listenAddress)
 	dlvCmd.Stdout = stdout
 	dlvCmd.Stderr = stderr
 	dlvCmd.Stdin = stdin

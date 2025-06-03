@@ -3,3 +3,28 @@ description:
 globs: cmd/codesign/*
 alwaysApply: false
 ---
+# CodeSign Rules
+
+Refer to [cmd/codesign/README.md](mdc:root/file:cmd/codesign/README.md) for complete documentation.
+
+## Usage in Development
+
+- Use `go tool github.com/walteh/go-extras/cmd/codesign` via Go 1.24+ tool directive
+- Prefer friendly entitlement names (`virtualization`, `hypervisor`) over Apple identifiers
+- Use `-mode=test` for Go test integration with automatic signing
+- Always use `-dry-run` first to verify operations before execution
+
+## Code Patterns
+
+- Structured logging with `slog` and `tint` for consistent output
+- Context-based operations with `slogctx` for request tracing
+- Mode-based command design (`sign`, `exec`, `test`, `detect`)
+- Entitlements XML generation from friendly names or full identifiers
+- Legacy mode compatibility for backward compatibility with existing tools
+
+## Apple Integration
+
+- Ad-hoc signing with `-` identity for development
+- Entitlements XML file generation for complex scenarios
+- `codesign` command wrapper with force re-signing support
+- Detection mode for analyzing existing binary signatures

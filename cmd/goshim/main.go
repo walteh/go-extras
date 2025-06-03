@@ -42,8 +42,8 @@ type GoShimConfig struct {
 	StdoutsToSuppress []string
 }
 
-// NewGowConfig creates a new configuration with defaults
-func NewGowConfig() *GoShimConfig {
+// NewGoShimConfig creates a new configuration with defaults
+func NewGoShimConfig() *GoShimConfig {
 	workspaceRoot := findWorkspaceRoot()
 
 	return &GoShimConfig{
@@ -95,7 +95,7 @@ func findWorkspaceRoot() string {
 
 // setupStdioLogging wraps global stdio to pipe to log file
 func (cfg *GoShimConfig) setupStdioLogging(command string, args []string) error {
-	logDir := filepath.Join(cfg.WorkspaceRoot, ".log", "gow")
+	logDir := filepath.Join(cfg.WorkspaceRoot, ".log", "goshim")
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return fmt.Errorf("failed to create log directory: %w", err)
 	}
@@ -110,7 +110,7 @@ func (cfg *GoShimConfig) setupStdioLogging(command string, args []string) error 
 	}
 
 	// Write command header to log file
-	header := fmt.Sprintf("=== GOW STDIO LOG ===\n")
+	header := fmt.Sprintf("=== goshim STDIO LOG ===\n")
 	header += fmt.Sprintf("Timestamp: %s\n", time.Now().Format("2006-01-02 15:04:05.000000"))
 	header += fmt.Sprintf("Process ID: %d\n", os.Getpid())
 	header += fmt.Sprintf("Command: %s %s\n", command, strings.Join(args, " "))
@@ -365,18 +365,18 @@ func fileExists(filename string) bool {
 
 // printUsage shows usage information
 func printUsage() {
-	fmt.Println("gow - High-performance drop-in replacement for go command")
+	fmt.Println("goshim - High-performance drop-in replacement for go command")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  gow [any-go-command]         True pass-through to go command")
+	fmt.Println("  goshim [any-go-command]         True pass-through to go command")
 	fmt.Println()
 	fmt.Println("Enhanced commands:")
-	fmt.Println("  gow test [flags] [target]    Enhanced test runner with project gotestsum")
-	fmt.Println("  gow mod tidy                 Optimized mod tidy via project task system")
-	fmt.Println("  gow mod upgrade              Optimized mod upgrade via project task system")
-	fmt.Println("  gow tool [args...]           go tool with error suppression")
-	fmt.Println("  gow retab                    Format code with retab tool")
-	fmt.Println("  gow dap [args...]            Run delve in DAP mode")
+	fmt.Println("  goshim test [flags] [target]    Enhanced test runner with project gotestsum")
+	fmt.Println("  goshim mod tidy                 Optimized mod tidy via project task system")
+	fmt.Println("  goshim mod upgrade              Optimized mod upgrade via project task system")
+	fmt.Println("  goshim tool [args...]           go tool with error suppression")
+	fmt.Println("  goshim retab                    Format code with retab tool")
+	fmt.Println("  goshim dap [args...]            Run delve in DAP mode")
 	fmt.Println()
 	fmt.Println("Test-specific flags:")
 	fmt.Println("  -function-coverage           Enable function coverage reporting")
@@ -392,21 +392,21 @@ func printUsage() {
 	fmt.Println("  -target dir                  Target directory (default: .)")
 	fmt.Println()
 	fmt.Println("Global flags:")
-	fmt.Println("  -verbose                     Verbose gow output")
-	fmt.Println("  -pipe-stdio-to-file          Pipe all stdio to timestamped log file (./.log/gow/)")
+	fmt.Println("  -verbose                     Verbose goshim output")
+	fmt.Println("  -pipe-stdio-to-file          Pipe all stdio to timestamped log file (./.log/goshim/)")
 	fmt.Println()
 	fmt.Println("Examples:")
-	fmt.Println("  gow test -codesign ./pkg/vmnet                          # Basic signing with virtualization")
-	fmt.Println("  gow test -codesign-entitlement hypervisor ./pkg/host    # Custom entitlement")
-	fmt.Println("  gow test -codesign -function-coverage -v ./...          # Full enhanced testing")
-	fmt.Println("  gow -pipe-stdio-to-file build ./cmd/myapp               # Build with stdio logging")
+	fmt.Println("  goshim test -codesign ./pkg/vmnet                          # Basic signing with virtualization")
+	fmt.Println("  goshim test -codesign-entitlement hypervisor ./pkg/host    # Custom entitlement")
+	fmt.Println("  goshim test -codesign -function-coverage -v ./...          # Full enhanced testing")
+	fmt.Println("  goshim -pipe-stdio-to-file build ./cmd/myapp               # Build with stdio logging")
 	fmt.Println()
 	fmt.Println("All other commands are passed through to the real go binary with zero overhead.")
 	fmt.Println("Enhanced commands use project tools (gotestsum, task) for optimal performance.")
 }
 
 func main() {
-	cfg := NewGowConfig()
+	cfg := NewGoShimConfig()
 
 	args := os.Args[1:]
 
@@ -427,7 +427,7 @@ func main() {
 
 	// Setup stdio logging if requested
 	if cfg.PipeStdioToFile && len(args) > 0 {
-		if err := cfg.setupStdioLogging("gow", args); err != nil {
+		if err := cfg.setupStdioLogging("goshim", args); err != nil {
 			fmt.Fprintf(os.Stderr, "Error setting up stdio logging: %v\n", err)
 			os.Exit(1)
 		}
@@ -478,7 +478,7 @@ func main() {
 			os.Exit(1)
 		}
 
-	case "gow-help", "--gow-help":
+	case "goshim-help", "--goshim-help":
 		printUsage()
 
 	default:

@@ -15,12 +15,12 @@ const (
 )
 
 func isNestedBy(command Command) bool {
-	env := os.Getenv("GOW_GO_CALLED_BY")
+	env := os.Getenv("GOSHIM_CALLED_BY")
 	return env == string(command)
 }
 
 func addSelfAsGoToPath(command Command) ([]string, string, func(), error) {
-	tmpDir, err := os.MkdirTemp("", "gow-go-injected-*")
+	tmpDir, err := os.MkdirTemp("", "goshim-injected-*")
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("create temp directory: %w", err)
 	}
@@ -47,7 +47,7 @@ func addSelfAsGoToPath(command Command) ([]string, string, func(), error) {
 	}
 	fmt.Printf("I am %s, added %s to PATH as a symlink\n", executable, updatedPath)
 
-	updatedEnv := append([]string{"PATH=" + updatedPath, "GOW_GO_CALLED_BY=" + string(command)}, os.Environ()...)
+	updatedEnv := append([]string{"PATH=" + updatedPath, "GOSHIM_CALLED_BY=" + string(command)}, os.Environ()...)
 
 	return updatedEnv, updatedPath, func() {
 		os.Setenv("PATH", strings.ReplaceAll(os.Getenv("PATH"), tmpDir+string(os.PathListSeparator), ""))

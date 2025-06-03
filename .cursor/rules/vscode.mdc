@@ -3,3 +3,121 @@ description:
 globs: *.ts,package.json,tsconfig.json
 alwaysApply: false
 ---
+# VS Code Extension Rules
+
+## Package Management & Build
+
+- Use **Bun** for all package management and build operations
+- `bun install`, `bun build`, `bun test` for standard operations
+- External dependencies via `bun add` with `--dev` for development-only packages
+- Build target: Node with CommonJS format for VS Code compatibility
+- External `vscode` module to avoid bundling VS Code APIs
+
+## TypeScript Style (Go-like Patterns)
+
+### Functional Programming First
+
+- **Prefer functions over classes** - only use classes when absolutely necessary (providers, complex state)
+- Use the `tryCatch` pattern from `try-catch.ts` for error handling:
+  ```typescript
+  const result = await tryCatch(riskyOperation());
+  if (result.error) {
+      // handle error
+      return;
+  }
+  // use result.data
+  ```
+
+### Go-like Error Handling
+
+- Return error objects instead of throwing exceptions when possible
+- Use discriminated unions for success/failure states
+- Explicit error checking at call sites (like Go's `if err != nil`)
+
+### Minimal Class Usage
+
+Classes are only appropriate for:
+- VS Code API providers (`CodeLensProvider`, `DebugConfigurationProvider`)
+- Complex stateful objects that need lifecycle management
+- When implementing VS Code interfaces that require class structure
+
+**Avoid classes for:**
+- Simple data containers (use interfaces/types)
+- Utility functions (use standalone functions)
+- Configuration objects (use plain objects)
+
+### Structure & Organization
+
+- **Flat function exports** over nested object hierarchies
+- **Single responsibility** - each file should have a clear, focused purpose
+- **Pure functions** where possible - same input always produces same output
+- **Immutable data** - prefer `readonly` interfaces and avoid mutation
+
+## VS Code Integration Patterns
+
+### Extension Activation
+
+- Clean activation function that registers providers and commands
+- Use `context.subscriptions.push()` for proper cleanup
+- Coordinate with Go extension activation when needed
+
+### Provider Pattern
+
+```typescript
+// Good: Functional approach with minimal class
+export class MyProvider implements vscode.SomeProvider {
+    constructor(private readonly deps: Dependencies) {}
+    
+    async provide(document: vscode.TextDocument): Promise<Result[]> {
+        return await processDocument(document, this.deps);
+    }
+}
+
+// Better: Keep business logic in pure functions
+async function processDocument(
+    document: vscode.TextDocument, 
+    deps: Dependencies
+): Promise<Result[]> {
+    // Pure function logic here
+}
+```
+
+### Configuration
+
+- Use VS Code's configuration API with type-safe access
+- Provide sensible defaults in `package.json`
+- Runtime configuration validation with clear error messages
+
+## File Organization
+
+```
+src/
+├── extension.ts           # Main activation, minimal
+├── try-catch.ts          # Error handling utilities
+├── types.ts              # Shared type definitions
+├── config.ts             # Configuration management
+├── providers/            # VS Code providers (classes only)
+├── functions/            # Pure business logic functions
+└── utils/                # Utility functions
+```
+
+## Dependencies
+
+- **Minimal external dependencies** - prefer built-in Node.js and VS Code APIs
+- **No class-heavy libraries** - avoid dependencies that force OOP patterns
+- **Type-only imports** when possible to reduce bundle size
+- External dependencies should follow functional programming patterns
+
+## Testing
+
+- Use Bun's built-in test runner
+- Test pure functions independently from VS Code APIs
+- Mock VS Code APIs minimally and focus on business logic testing
+- Integration tests for provider behavior
+
+## Performance
+
+- **Lazy loading** - don't initialize expensive resources at activation
+- **Debounced operations** for file watching and user input
+- **Cancellation tokens** for long-running operations
+- **Memory efficient** - clean up resources and avoid memory leaks

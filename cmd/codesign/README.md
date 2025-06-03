@@ -6,7 +6,6 @@ A comprehensive code signing tool for Go developers working with Apple framework
 
 -   **Flexible entitlements**: Support for common Apple entitlements with friendly names
 -   **Multiple operation modes**: Sign, execute, and test modes
--   **Backward compatibility**: Maintains compatibility with existing `gow` integration
 -   **Dry-run support**: See what would be done without executing
 -   **Verbose logging**: Detailed operation logging with structured output
 
@@ -82,15 +81,6 @@ Designed for `go test` integration. Acts as an exec wrapper that signs test bina
 
 ## Integration with Go Workflows
 
-### With `gow` (Legacy Compatibility)
-
-The tool maintains backward compatibility with the existing `gow` integration:
-
-```bash
-# These still work as before
-./gow test -codesign -v ./pkg/vmnet
-```
-
 ### Direct with `go test`
 
 ```bash
@@ -162,10 +152,6 @@ Use `-verbose` to see detailed logging of all operations.
 ### Dry Run
 
 Use `-dry-run` to see what commands would be executed without actually running them.
-
-### Legacy Mode Issues
-
-If you encounter issues with the legacy mode (used by `gow`), the tool automatically detects and handles the old argument format.
 
 ### Entitlement Issues
 

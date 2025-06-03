@@ -226,40 +226,6 @@ func testMode(ctx context.Context, config *Config) error {
 		return errors.Errorf("signing binary before execution: %w", err)
 	}
 
-	// wrapAddress := os.Getenv("GOW_DAP_WRAP_ADDRESS")
-
-	// if config.DapListen != "" {
-	// 	// create a wrapper script that will
-	// 	tmpDir, err := os.MkdirTemp("", "gow-codesign-dap-test-wrapper-*")
-	// 	if err != nil {
-	// 		return errors.Errorf("creating temp directory: %w", err)
-	// 	}
-	// 	script := `
-	// 	#!/bin/sh
-	// 	# if tmpdir/start still exists, we just run the binary
-	// 	if [ -f %[1]s/start ]; then
-	// 		rm %[1]s/start
-	// 		exec %[2] $@
-	// 	else
-	// 		go tool dap exec -listen=%[3]s %[2] $@
-	// 	fi
-	// 	`
-	// 	err = os.WriteFile(filepath.Join(tmpDir, "run"), []byte(fmt.Sprintf(script, tmpDir, binary, config.DapListen)), 0755)
-	// 	if err != nil {
-	// 		return errors.Errorf("creating wrapper script: %w", err)
-	// 	}
-	// 	err = os.WriteFile(filepath.Join(tmpDir, "start"), []byte(fmt.Sprintf("%d", os.Getpid())), 0644)
-	// 	if err != nil {
-	// 		return errors.Errorf("creating start file: %w", err)
-	// 	}
-
-	// 	binary = filepath.Join(tmpDir, "run")
-
-	// 	// os.RemoveAll(tmpDir)
-
-	// 	return fmt.Errorf("dap wrap address: %s", config.DapListen)
-	// }
-
 	if err := syscall.Exec(binary, args, os.Environ()); err != nil {
 		return errors.Errorf("executing signed binary: %w", err)
 	}
@@ -466,10 +432,10 @@ func detectMode(ctx context.Context, config *Config) error {
 			entArgs = append(entArgs, "-entitlement="+ent)
 		}
 		fmt.Printf("  codesign -mode=sign -target=./mybinary %s\n", strings.Join(entArgs, " "))
-		fmt.Printf("  gow test -codesign %s ./pkg/mypackage\n", strings.Join(entArgs, " "))
+		fmt.Printf("  goshim test -codesign %s ./pkg/mypackage\n", strings.Join(entArgs, " "))
 	} else {
 		fmt.Printf("  codesign -mode=sign -target=./mybinary -entitlement=virtualization\n")
-		fmt.Printf("  gow test -codesign ./pkg/mypackage\n")
+		fmt.Printf("  goshim test -codesign ./pkg/mypackage\n")
 	}
 
 	return nil
