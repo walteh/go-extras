@@ -1,0 +1,148 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: 3
+vars:
+    GO_MODULES:
+        sh: awk '/^[[:space:]]*[^)]/ && NR>3 {gsub(/^[[:space:]]+/,""); print}' go.work
+    GO_ROOT_PKG:
+        sh: cat go.mod | grep -oE '^module[^\S]+' | cut -d' ' -f2
+    GO_COMMAND: go
+    TINYGO_COMMAND: tinygo
+    WASM_OUT_DIRS:
+      - editors/vscode/out
+
+env:
+    COMPOSE_BAKE: true
+    GOPROXY: 'https://proxy.golang.org'
+    GOSUMDB: sum.golang.org
+    GOPRIVATE: github.com/walteh
+    DOCKER_BUILDKIT: 1
+
+tasks:
+    go:tidy:
+        run: once
+        aliases: [go-mod-tidy, tidy]
+        cmds:
+          - for: {var: GO_MODULES}
+            cmd: cd {{.ITEM}} && go mod tidy -e
+
+    go:upgrade:
+        aliases: [go-mod-upgrade]
+        run: once
+        cmds:
+          - |-
+            {{.GO_COMMAND}} tool go-mod-upgrade --force
+          - task: go-mod-tidy
+
+    go:update:
+        aliases: [go-mod-update]
+        requires: {vars: [CLI_ARGS]}
+        run: once
+        cmds:
+          - task: go:tidy
+          - for: {var: GO_MODULES}
+            cmd: cd {{.ITEM}} && go get -u {{.CLI_ARGS}}
+          - task: go:tidy
+
+    build:wasm:
+        requires:
+            vars:
+              - GO_COMMAND
+              - GO_WASM_EXEC
+        vars:
+            GO_COMMAND: "{{.GO_COMMAND}}"
+            GO_WASM_EXEC:
+                sh: echo "$(go env GOROOT)/lib/wasm/wasm_exec.js"
+            TMP_DIR:
+                sh: mktemp -d
+        cmds:
+          - cmd: |-
+                cp {{.GO_WASM_EXEC}} {{.TMP_DIR}}/
+          - cmd: |-
+                CGO_ENABLED=0 GOOS=js GOARCH=wasm "{{.GO_COMMAND}}" build -ldflags="-s -w"  -trimpath -o {{.TMP_DIR}}/retab.wasm ./cmd/retab
+          - cmd: |-
+                bun install
+          - for: {var: WASM_OUT_DIRS}
+            cmd: |-
+                mkdir -p {{.ITEM}} && cp {{.TMP_DIR}}/* {{.ITEM}}
+          - cmd: |-
+                rm -rf {{.TMP_DIR}}
+
+    build:wasm:tinygo:
+        cmds:
+          - task: build:wasm
+            vars:
+                GO_COMMAND: "{{.TINYGO_COMMAND}}"
+                GO_WASM_EXEC:
+                    sh: "$(tinygo env TINYGOROOT)/targets/wasm_exec.js"
+
+    vscode:package:
+        dir: editors/vscode
+        cmds:
+          - task: build:wasm
+          - cmd: |-
+                bun run package
+          - cmd: |-
+                mv ./retab-*.vsix ~/Downloads
+          - cmd: |-
+                open https://marketplace.visualstudio.com/manage/publishers/walteh
+
+    vscode:rebuild:
+        dir: editors/vscode
+        cmds:
+          - task: build:wasm
+          - cmd: |-
+                bun run build
+
+    mockery:
+        run: once
+        desc: generates mocks for interfaces with '//go:mock' comment
+        vars:
+            TMP_DIR: ./gen/config
+            MOCKERY_INTERFACE_DATA:
+                sh: |-
+                    grep -rl "//go:mock" --include="*.go" . \
+                       | xargs -I{} bash -c 'd=$(dirname {}); d=${d#./}; awk -v d="$d {}" '\''/\/\/go:mock/ {getline; if($1=="type") print d, $2}'\'' {}'
+            MOCKERY_SOURCE_FILES:
+                sh: |-
+                    grep -rl "//go:mock" --include="*.go" .
+        sources:
+          - '{{.MOCKERY_SOURCE_FILES | join ","}}'
+          - .mockery.yaml
+        generates:
+          - ./gen/mocks/**/*_mock.gen.go
+          - ./gen/config/.mockery.yaml
+        cmds:
+          - cmd: |-
+                mkdir -p {{.TMP_DIR}}
+          - cmd: |-
+                cp .mockery.yaml {{.TMP_DIR}}/.mockery.yaml
+          - for: {var: "MOCKERY_INTERFACE_DATA", split: "\n", as: ITEM}
+            cmd: |-
+                yq -i ".packages.\"{{ .GO_ROOT_PKG }}/{{ splitList " " .ITEM | first }}\".interfaces.{{ splitList " " .ITEM | last }} = {}" {{.TMP_DIR}}/.mockery.yaml
+          - cmd: |-
+                {{.GO_COMMAND}} tool github.com/vektra/mockery/v2 --config={{.TMP_DIR}}/.mockery.yaml
+
+    options:
+        run: once
+        desc: generates options for structs with '//go:opts' comment
+        vars:
+            OPTION_GEN_DATA:
+                sh: |-
+                    grep -rl "//go:opts" --include="*.go" . | xargs -I{} bash -c 'd=$(dirname {}); d=${d#./}; awk -v d="$d {}" '\''/\/\/go:opts/ {getline; if($1=="type") print d, $2}'\'' {}'
+            OPTION_GEN_SOURCE_FILES:
+                sh: |-
+                    grep -rl "//go:opts" --include="*.go" .
+        generates:
+          - "**/*_opts.gen.go"
+        sources:
+          - '{{.OPTION_GEN_SOURCE_FILES | join ","}}'
+        cmds:
+          - for: {var: OPTION_GEN_DATA, split: "\n"}
+            cmd: |-
+                set -e
+                {{.GO_COMMAND}} tool github.com/kazhuravlev/options-gen/cmd/options-gen \
+                  -out-filename={{splitList " " .ITEM | first}}/{{ splitList " " .ITEM | last | lower | trimSuffix "opts" }}_opts.gen.go \
+                  -filename={{ splitList " " .ITEM | rest | first }} \
+                  -from-struct={{ splitList " " .ITEM | last }} \
+                  -pkg={{ splitList " " .ITEM | first | splitList "/" | last }}

@@ -1,0 +1,137 @@
+{
+	"folders": [
+		{
+			"name": "root",
+			"path": "."
+		},
+		{
+			"name": "vscode [ts]",
+			"path": "editors/vscode"
+		}
+	],
+	"extensions": {
+		"recommendations": []
+	},
+	"settings": {
+		//===========================================
+		// ESLint Configuration
+		//===========================================
+		"eslint.options": {
+			"flags": [
+				"unstable_ts_config"
+			]
+		},
+		// "yaml.all"
+		"eslint.useESLintClass": true,
+		//===========================================
+		// Editor General Settings
+		//===========================================
+		"editor.formatOnSave": true,
+		// "editor.defaultFormatter": "esbenp.prettier-vscode",
+		"editor.formatOnSaveMode": "file",
+		"editor.detectIndentation": false,
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": "always",
+			// "source.organizeImports": "always",
+			"source.fixAll": "always"
+		},
+		"workbench.tree.indent": 16,
+		//===========================================
+		// File Associations
+		//===========================================
+		"files.associations": {
+			"tsconfig.*json": "jsonc",
+			"*.css": "tailwindcss",
+			"Dockerfile": "dockerfile",
+			".copyrc": "hcl"
+			// "*.tmpl": "gotmpl_hack"
+		},
+		//===========================================
+		// TypeScript Settings
+		//===========================================
+		"typescript.inlayHints.parameterNames.suppressWhenArgumentMatchesName": true,
+		"typescript.inlayHints.parameterNames.enabled": "all",
+		"typescript.inlayHints.variableTypes.enabled": false,
+		"typescript.inlayHints.propertyDeclarationTypes.enabled": true,
+		"typescript.tsserver.experimental.enableProjectDiagnostics": true,
+		//===========================================
+		// Prettier Settings
+		//===========================================
+		"prettier.requireConfig": false,
+		//===========================================
+		// Explorer Settings
+		//===========================================
+		"explorer.sortOrder": "type",
+		"explorer.sortOrderLexicographicOptions": "upper",
+		//===========================================
+		// Retab Settings
+		//===========================================
+		"retab.executable": "./out/tools/retab",
+		//===========================================
+		// YAML Settings
+		//===========================================
+		"yaml.format.enable": true,
+		//===========================================
+		// Protobuf Settings
+		//===========================================
+		//===========================================
+		// Material Icon Theme Customization
+		//===========================================
+		"material-icon-theme.folders.associations": {
+			"dynamo": "database",
+			"mw": "middleware"
+		},
+		//===========================================
+		// Language-specific Formatting Settings
+		//===========================================
+		"[json]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[jsonc]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[yaml]": {
+			"editor.defaultFormatter": "walteh.retab-vscode"
+		},
+		"[dotenv]": {
+			"editor.defaultFormatter": "foxundermoon.shell-format"
+		},
+		"[shellscript]": {
+			"editor.defaultFormatter": "foxundermoon.shell-format"
+		},
+		"[go]": {
+			"editor.defaultFormatter": "golang.go"
+		},
+		"[docker]": {
+			"editor.defaultFormatter": "ms-azuretools.vscode-docker"
+		},
+		"[dockerfile]": {
+			"editor.defaultFormatter": "ms-azuretools.vscode-docker"
+		},
+		"[ignore]": {
+			"editor.defaultFormatter": "foxundermoon.shell-format"
+		},
+		"[properties]": {
+			"editor.defaultFormatter": "foxundermoon.shell-format"
+		},
+		"[proto]": {
+			"editor.defaultFormatter": "walteh.retab-vscode"
+		},
+		"[typescript]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[typescriptreact]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		//===========================================
+		// SVG Settings
+		//===========================================
+		"svg.preview.background": "transparent",
+		"align-bicep.disallowed-language-ids": [
+			"terraform",
+			"go"
+		],
+		"dockerfile-tidy.formatOnSave": true,
+		"retab.use_wasm": false
+	}
+}
