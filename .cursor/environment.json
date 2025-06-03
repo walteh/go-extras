@@ -1,7 +1,7 @@
 {
-	"user": "developer",
-	"install": "./agent/install.sh",
-	"start": "./agent/start.sh",
+	"user": "bgagent",
+	"install": "./background/install.sh",
+	"start": "./background/start.sh",
 	"terminals": [
 		{
 			"name": "main",
@@ -20,7 +20,7 @@
 		}
 	],
 	"build": {
-		"context": "./agent",
+		"context": "./background",
 		"dockerfile": "Dockerfile"
 	}
 }

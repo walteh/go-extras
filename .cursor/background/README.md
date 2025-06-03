@@ -25,7 +25,7 @@ The `Dockerfile` provides a simple, declarative development environment with:
 -   **Bun**: Latest version (for TypeScript/Node.js ecosystem)
 -   **Go Tools**: Available via `go tool <name>` from `tools/go.mod`
 -   **VS Code Tools**: Available via `bun`/`bunx` from `package.json`
--   **User**: Non-root `developer` user with sudo access
+-   **User**: Non-root `bgagent` user with sudo access
 
 This approach minimizes complexity while providing all necessary tools via Go's tool directive and Bun.
 

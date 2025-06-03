@@ -18,17 +18,17 @@ RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:$PATH"
 
 # Create non-root user
-RUN useradd -m -s /bin/bash developer \
-	&& usermod -aG sudo developer \
-	&& echo "developer ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+RUN useradd -m -s /bin/bash bgagent \
+	&& usermod -aG sudo bgagent \
+	&& echo "bgagent ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Switch to developer user and install Bun for them
-USER developer
-WORKDIR /home/developer
+USER bgagent
+WORKDIR /home/bgagent
 
 # Install Bun for developer user
 RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH="/home/developer/.bun/bin:$PATH"
+ENV PATH="/home/bgagent/.bun/bin:$PATH"
 
 # Set working directory
 WORKDIR /workspace
