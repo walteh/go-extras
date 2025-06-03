@@ -1,0 +1,81 @@
+---
+description: 
+globs: *_test.go
+alwaysApply: false
+---
+**⚠️ IMPORTANT: Agents should update this rule when testing practices change**
+
+# Testing Standards
+
+## Test Case Naming
+- Use descriptive test names with `Test` prefix (e.g., `TestVMBootTime`)
+- For subtests, use descriptive names with underscores (e.g., `test_with_init_injection`)
+- Avoid spaces and special characters in test names
+
+## Testing Tools and Commands
+- **Always use `./goshim test`** (not `go test` directly)
+- Be aware that some tests or features may require specific **build tags** (e.g., `-tags libkrun_efi`). Consult module-specific documentation or `main.go` examples for required tags. Run tests with appropriate tags to ensure full coverage of features.
+  Example: `./goshim test -tags=customfeature ./pkg/custommodule/`
+- `./goshim test -function-coverage` - Verify >85% function coverage (required)
+- `./goshim test -v` - Verbose output for debugging
+- `./goshim test -run TestName` - Run specific test
+- `./goshim test -bench=.` - Run benchmarks
+- `./goshim test -codesign` - Test with code signing (macOS virtualization)
+- `./goshim test -ide` - IDE-compatible output format
+
+## Assertions & Mocking
+- Use `testify/assert` for assertions
+- Use `testify/require` for critical checks that should stop test execution
+- Use `testify/mock` for creating mocks (or mockery generated mocks)
+- Always add descriptive messages to assertions:
+  ```go
+  require.NoError(t, err, "VM boot should succeed")
+  assert.Equal(t, expected, actual, "boot time should be under 100ms")
+  ```
+
+## Performance Testing
+- Critical paths MUST have benchmarks
+- Use stream performance testing framework for I/O operations:
+  ```go
+  reader := tstream.NewTimingReader(r)
+  // Automatic bottleneck detection
+  ```
+- Target metrics:
+  - VM boot: <100ms
+  - API response: <5ms
+  - Command execution: <10ms overhead
+
+## Code Testability
+- Write code that is deliberately easy to test
+- Keep unit tests simple, clear, and exhaustive
+- Prefer table-driven tests for multiple scenarios
+- Use interfaces for dependencies to enable mocking
+
+## Testing Workflow
+- Run tests before committing: `./goshim test -function-coverage ./...`
+- Fix any coverage drops immediately
+- Performance regressions are blocking issues
+
+## Mock Generation
+- Define interfaces in appropriate packages
+- Add to `.mockery.yaml` for automatic generation
+- Generate mocks: `./goshim run github.com/vektra/mockery/v2`
+- Mocks are created in `./gen/mockery/`
+
+## Coverage Requirements
+- **>85% function coverage** is mandatory (enforced by CI)
+- Use `./goshim test -function-coverage` to check
+- Coverage reports show which functions need tests
+
+## Best Practices
+- Test both success and error paths
+- Use `t.Parallel()` for independent tests
+- Clean up resources with `t.Cleanup()` or defer
+- Use subtests with `t.Run()` for related test cases
+- Never rename test packages from `x_test` to `x` unless absolutely necessary
+
+## Debugging Tests
+- Use `./goshim test -v` for verbose output
+- For debugging specific tests: `./goshim dap` with VS Code
+- Profile tests: `./goshim test -cpuprofile=cpu.prof`
+- Use `slog` for debug logging in tests (respects test verbosity)

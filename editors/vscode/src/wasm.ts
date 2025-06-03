@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import { exec, execSync } from "child_process";
 import { tmpdir } from "os";
+import { tryCatch } from "./try-catch";
 
 // Generic WASM result interface
 interface WasmResult {
@@ -25,28 +26,6 @@ declare global {
 	var wasm_module: any;
 	var wasm_log: (message: string) => void;
 	var wasm_exec: (cmd: string, data: string, tempFiles: string) => string;
-}
-
-// Generic success/failure result types
-type Success<T> = {
-	data: T;
-	error: null;
-};
-
-type Failure<E> = {
-	data: null;
-	error: E;
-};
-
-type Result<T, E = Error> = Success<T> | Failure<E>;
-
-export async function tryCatch<T, E = Error>(promise: Promise<T>): Promise<Result<T, E>> {
-	try {
-		const data = await promise;
-		return { data, error: null };
-	} catch (error) {
-		return { data: null, error: error as E };
-	}
 }
 
 // Configuration interface for the WASM wrapper

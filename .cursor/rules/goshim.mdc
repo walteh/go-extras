@@ -1,0 +1,5 @@
+---
+description: 
+globs: cmd/goshim/*
+alwaysApply: false
+---

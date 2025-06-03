@@ -5,7 +5,7 @@
 			"path": "."
 		},
 		{
-			"name": "vscode [ts]",
+			"name": "vscode[ts]",
 			"path": "editors/vscode"
 		}
 	],

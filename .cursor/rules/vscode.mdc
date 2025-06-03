@@ -1,0 +1,5 @@
+---
+description: 
+globs: *.ts,package.json,tsconfig.json
+alwaysApply: false
+---

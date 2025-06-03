@@ -6,7 +6,7 @@ vars:
         sh: awk '/^[[:space:]]*[^)]/ && NR>3 {gsub(/^[[:space:]]+/,""); print}' go.work
     GO_ROOT_PKG:
         sh: cat go.mod | grep -oE '^module[^\S]+' | cut -d' ' -f2
-    GO_COMMAND: go
+    GO_COMMAND: ./goshim
     TINYGO_COMMAND: tinygo
     WASM_OUT_DIRS: [editors/vscode/out]
     PROJECT_NAME: go-extras

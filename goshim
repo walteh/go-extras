@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# check for a -root passed in the arguments
+if [[ "$*" == *"-root"* ]]; then
+	sudo --close-from=4 go tool goshim "$@"
+else
+	go tool goshim "$@"
+fi
