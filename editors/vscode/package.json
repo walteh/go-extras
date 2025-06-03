@@ -9,13 +9,33 @@
 		"vscode": "^1.91.0"
 	},
 	"categories": [
-		"Other"
+		"Other",
+		"Debuggers"
 	],
 	"activationEvents": [
 		"onLanguage:go"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"debuggers": [
+			{
+				"type": "go",
+				"configurationSnippets": [
+					{
+						"label": "Go: Debug Test with Shim Support",
+						"description": "Debug Go test with automatic containerd shim debugging",
+						"body": {
+							"name": "Debug Test + Shim",
+							"type": "go",
+							"request": "launch",
+							"mode": "test",
+							"program": "${workspaceFolder}",
+							"enableShimDebugging": true
+						}
+					}
+				]
+			}
+		],
 		"configuration": {
 			"title": "Go Extras",
 			"properties": {
@@ -33,6 +53,26 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Show 'go to definition' CodeLens"
+				},
+				"go-extras.debug.autoDetectShims": {
+					"type": "boolean",
+					"default": true,
+					"description": "Automatically detect and debug containerd shims"
+				},
+				"go-extras.debug.shimPath": {
+					"type": "string",
+					"default": "",
+					"description": "Path to containerd shim binary for debugging"
+				},
+				"go-extras.debug.showShimSessions": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show nested shim debug sessions in call stack"
+				},
+				"go-extras.debug.dlvPath": {
+					"type": "string",
+					"default": "dlv",
+					"description": "Path to delve debugger binary"
 				}
 			}
 		},
@@ -44,6 +84,10 @@
 			{
 				"command": "go-extras.refresh",
 				"title": "Refresh Go Extras"
+			},
+			{
+				"command": "go-extras.toggleShimDebugging",
+				"title": "Toggle Shim Debugging"
 			}
 		]
 	},
