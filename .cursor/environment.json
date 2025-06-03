@@ -1,7 +1,7 @@
 {
 	"user": "bgagent",
-	"install": "/bin/bgagent-install.sh",
-	"start": "/bin/bgagent-start.sh",
+	"install": ".cursor/bgagent/install.sh",
+	"start": ".cursor/bgagent/start.sh",
 	"terminals": [
 		{
 			"name": "main",
